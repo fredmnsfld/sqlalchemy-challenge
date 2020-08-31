@@ -1,4 +1,4 @@
-%matplotlib inline
+
 from matplotlib import style
 style.use('fivethirtyeight')
 import matplotlib.pyplot as plt
@@ -33,31 +33,23 @@ from flask import Flask, jsonify
 # 2. Create an app
 app = Flask(__name__)
 
-# 2.1 Global Variable
-hello_dict = [{"Hello": "World!"},{"Hello":"Portland!"}]
 
 @app.route("/")
 def welcome():
     """List all available api routes."""
     return (
         f"Available Routes:<br/>"
-        f"<a href='/api/v1.0/precipitation'>Precipitation</a><br/>"
+        f"<a href='/api/v1.0/precipitation'>precipitation</a><br/>"
         f"<a href='/api/v1.0/stations'>Stations</a><br/>"
         f"<a href='/api/v1.0/tobs'>Temp_observed</a><br/>"
-        f"<a href='/api/v1.0/countryitemtotals/USA'>countryitemtotals/USA</a><br/>"
-        f"<a href='/api/v1.0/postcodeitemtotals/USA'>postcodeitemtotals/USA</a><br/>"
     )
-
-# 3. Define static routes
-@app.route("/")
-def index():
-    return "Hello, world!"
-
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     session = Session(engine)
-    results = session.query(Invoices.BillingCountry).group_by(Invoices.BillingCountry).all()
+    results = session.query(measurement.date, measurement.prcp).\
+    filter(measurement.date > '2016-08-23').\
+    order_by(measurement.date).all()
     session.close()
     all_results = list(np.ravel(results))
     return jsonify(all_results)
@@ -65,29 +57,23 @@ def precipitation():
 @app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
-    results = session.query(Invoices.BillingCountry).group_by(Invoices.BillingCountry).all()
+    most_act_station = session.query(measurement.station, func.count(measurement.station)).\
+    group_by(measurement.station).order_by(func.count(measurement.station).desc()).all()
     session.close()
-    all_results = list(np.ravel(results))
+    all_results = list(np.ravel(most_act_station))
     return jsonify(all_results)
 
 
 @app.route("/api/v1.0/tobs")
 def tobs():
     session = Session(engine)
-    results = session.query(Invoices.BillingCountry).group_by(Invoices.BillingCountry).all()
+    highesttemp_perstation = session.query(measurement.station, func.max(measurement.tobs)).\
+    group_by(measurement.station).order_by(func.max(measurement.tobs).desc()).all()
     session.close()
-    all_results = list(np.ravel(results))
+    all_results = list(np.ravel(highesttemp_perstation))
     return jsonify(all_results)
 
 
-@app.route("/jsonified")
-def jsonified():
-    return jsonify(hello_dict)    
-
-# 4. define jsonified route
-@app.route("/jsonified")
-def jsonified():
-    return jsonify(hello_dict)
 
 
 # 5. Define main behavior
